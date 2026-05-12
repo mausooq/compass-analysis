@@ -1,7 +1,7 @@
 "use client";
 
 import { useDashboardStore } from "@/store/dashboardStore";
-import { exportStyledExcel } from "@/lib/exportExcel";
+
 
 export default function JobsTable() {
   const { jobs, search, selectedPrefix, showBlankDates, sortBy, setSortBy } =
