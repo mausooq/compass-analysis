@@ -2,10 +2,9 @@ import * as XLSX from "xlsx";
 import { RULES } from "./rules";
 import { differenceInDays } from "date-fns";
 
-type ExcelRow = Record<string, unknown>;
+type ExcelRow = Record<string, any>;
 
 export async function parseExcel(file: File) {
-
   // READ FILE
   const data = await file.arrayBuffer();
 
@@ -14,213 +13,119 @@ export async function parseExcel(file: File) {
     cellDates: true,
   });
 
-  const allRows: ExcelRow[] = [];
+  // ONLY FIRST SHEET
+  const firstSheet = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[firstSheet];
 
-  // ONLY READ FIRST SHEET
-  const firstSheet =
-    workbook.SheetNames[0];
-
-  const worksheet =
-    workbook.Sheets[firstSheet];
-
-  const rows =
-    XLSX.utils.sheet_to_json(
-      worksheet,
-      {
-        raw: false,
-        defval: "",
-      }
-    );
-
-  allRows.push(...rows);
+  // ✅ FIX: strongly typed output
+  const rows = XLSX.utils.sheet_to_json<ExcelRow>(worksheet, {
+    raw: false,
+    defval: "",
+  });
 
   // REMOVE DUPLICATES
   const uniqueMap = new Map<string, ExcelRow>();
 
-  allRows.forEach((row: ExcelRow) => {
-
+  rows.forEach((row: ExcelRow) => {
     const jobNo = String(
-
       row["Job No"] ||
-
-      row["JOB NO"] ||
-
-      row["JobNo"] ||
-
-      ""
-
+        row["JOB NO"] ||
+        row["JobNo"] ||
+        ""
     ).trim();
 
-    // SKIP EMPTY
     if (!jobNo) return;
 
-    // KEEP FIRST ONLY
     if (!uniqueMap.has(jobNo)) {
-
       uniqueMap.set(jobNo, row);
     }
   });
 
-  // UNIQUE ROWS
-  const uniqueRows =
-    Array.from(uniqueMap.values());
+  const uniqueRows = Array.from(uniqueMap.values());
 
   // FINAL DATA
   return uniqueRows.map((row: ExcelRow) => {
-
-    // JOB NUMBER
     const jobNo = String(
-
       row["Job No"] ||
-
-      row["JOB NO"] ||
-
-      row["JobNo"] ||
-
-      ""
-
+        row["JOB NO"] ||
+        row["JobNo"] ||
+        ""
     ).trim();
 
-    // PREFIX
-    const prefix =
-      jobNo.split("/")[1] || "";
+    const prefix = jobNo.split("/")[1] || "";
 
-    // RULE
     const rule = RULES[prefix];
 
-    // DATES
-    const eta =
-      parseExcelDate(row["ETA"]);
+    const eta = parseExcelDate(row["ETA"]);
+    const etd = parseExcelDate(row["ETD"]);
+    const dlv = parseExcelDate(row["DLV"]);
 
-    const etd =
-      parseExcelDate(row["ETD"]);
+    let selectedDate: Date | null = null;
 
-    const dlv =
-      parseExcelDate(row["DLV"]);
+    if (rule === "ETA") selectedDate = eta;
+    if (rule === "ETD") selectedDate = etd;
+    if (rule === "DLV") selectedDate = dlv;
 
-    // SELECT DATE
-    let selectedDate:
-      Date | null = null;
-
-    if (rule === "ETA") {
-      selectedDate = eta;
-    }
-
-    if (rule === "ETD") {
-      selectedDate = etd;
-    }
-
-    if (rule === "DLV") {
-      selectedDate = dlv;
-    }
-
-    // PENDING DAYS
-    let pendingDays:
-      number | null = null;
+    let pendingDays: number | null = null;
 
     if (selectedDate) {
+      const calculatedDays = differenceInDays(
+        new Date(),
+        selectedDate
+      );
 
-      const calculatedDays =
-        differenceInDays(
-          new Date(),
-          selectedDate
-        );
-
-      // NO NEGATIVE
-      pendingDays =
-        calculatedDays < 0
-          ? 0
-          : calculatedDays;
+      pendingDays = calculatedDays < 0 ? 0 : calculatedDays;
     }
 
     return {
-
       JobNo: jobNo,
 
-      Customer:
-
+      Customer: String(
         row["Customer"] ||
-
-        row["CUSTOMER"] ||
-
-        "",
+          row["CUSTOMER"] ||
+          ""
+      ),
 
       ETA: eta,
-
       ETD: etd,
-
       DLV: dlv,
 
       prefix,
-
       pendingDays,
 
-      agingBucket:
-        getAgingBucket(
-          pendingDays
-        ),
+      agingBucket: getAgingBucket(pendingDays),
     };
   });
 }
 
 // DATE PARSER
-function parseExcelDate(
-  value: any
-): Date | null {
+function parseExcelDate(value: any): Date | null {
+  if (!value) return null;
 
-  if (!value)
-    return null;
+  // already date
+  if (value instanceof Date) return value;
 
-  // ALREADY DATE
-  if (value instanceof Date) {
-    return value;
-  }
-
-  // EXCEL SERIAL
+  // excel serial
   if (!isNaN(value)) {
+    const parsed = XLSX.SSF.parse_date_code(Number(value));
 
-    const parsed =
-      XLSX.SSF.parse_date_code(
-        Number(value)
-      );
+    if (!parsed) return null;
 
-    if (!parsed)
-      return null;
-
-    return new Date(
-      parsed.y,
-      parsed.m - 1,
-      parsed.d
-    );
+    return new Date(parsed.y, parsed.m - 1, parsed.d);
   }
 
-  // STRING DATE
+  // string date
   const date = new Date(value);
 
-  return isNaN(date.getTime())
-    ? null
-    : date;
+  return isNaN(date.getTime()) ? null : date;
 }
 
 // STATUS
-function getAgingBucket(
-  days: number | null
-) {
-
-  if (days === null)
-    return "No Date";
-
-  if (days === 0)
-    return "Upcoming";
-
-  if (days <= 7)
-    return "Normal";
-
-  if (days <= 15)
-    return "Attention";
-
-  if (days <= 30)
-    return "Critical";
-
+function getAgingBucket(days: number | null) {
+  if (days === null) return "No Date";
+  if (days === 0) return "Upcoming";
+  if (days <= 7) return "Normal";
+  if (days <= 15) return "Attention";
+  if (days <= 30) return "Critical";
   return "Escalation";
 }

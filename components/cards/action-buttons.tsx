@@ -1,6 +1,6 @@
 "use client";
 
-import { exportExcel } from "@/lib/exportExcel";
+import { exportStyledExcel } from "@/lib/exportExcel";
 import { useDashboardStore } from "@/store/dashboardStore";
 
 export default function ActionButtons() {
@@ -9,7 +9,7 @@ export default function ActionButtons() {
   return (
     <div className="flex gap-4">
       <button
-        onClick={() => exportExcel(jobs)}
+        onClick={() => exportStyledExcel(jobs)}
         className="bg-[#00FF28] text-black px-5 py-3 rounded-2xl font-semibold"
       >
         Export Excel
