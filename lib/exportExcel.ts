@@ -4,17 +4,15 @@ export function exportStyledExcel(
   jobs: any[]
 ) {
 
-  // TITLE ROW
+  // TITLE
   const title = [
     ["COMPASS ANALYSIS"]
   ];
 
-  // DATE ROW
-  const dateRow = [
-    [
-      `Generated: ${new Date().toLocaleString()}`
-    ]
-  ];
+  // GENERATED DATE
+  const dateRow = [[
+    `Generated: ${new Date().toLocaleString()}`
+  ]];
 
   // EMPTY ROW
   const empty = [[]];
@@ -22,27 +20,71 @@ export function exportStyledExcel(
   // HEADERS
   const headers = [[
     "Job No",
-    "Prefix",
+    "Job Date",
     "Customer",
+    "ETD",
+    "ETA",
+    "Prepared By",
+    "Prefix",
     "Pending Days",
     "Status",
   ]];
 
+  // FORMAT DATE
+  const formatDate = (
+    value: any
+  ) => {
+
+    if (!value)
+      return "-";
+
+    const date =
+      new Date(value);
+
+    if (
+      isNaN(
+        date.getTime()
+      )
+    ) {
+      return "-";
+    }
+
+    return date.toLocaleDateString(
+      "en-GB"
+    );
+  };
+
   // DATA
-  const data = jobs.map((job) => [
+  const data = jobs.map(
+    (job) => [
 
-    job.JobNo,
+      job.JobNo,
 
-    job.prefix,
+      formatDate(
+        job.JobDate
+      ),
 
-    job.Customer,
+      job.Customer,
 
-    job.pendingDays ?? "-",
+      formatDate(
+        job.ETD
+      ),
 
-    job.agingBucket,
-  ]);
+      formatDate(
+        job.ETA
+      ),
 
-  // COMBINE
+      job.PreparedBy || "-",
+
+      job.prefix,
+
+      job.pendingDays ?? "-",
+
+      job.agingBucket,
+    ]
+  );
+
+  // FINAL DATA
   const finalData = [
     ...title,
     ...dateRow,
@@ -59,11 +101,32 @@ export function exportStyledExcel(
 
   // COLUMN WIDTHS
   ws["!cols"] = [
-    { wch: 25 },
-    { wch: 12 },
-    { wch: 40 },
-    { wch: 15 },
-    { wch: 18 },
+
+    { wch: 28 }, // Job No
+
+    { wch: 15 }, // Job Date
+
+    { wch: 40 }, // Customer
+
+    { wch: 15 }, // ETD
+
+    { wch: 15 }, // ETA
+
+    { wch: 20 }, // Prepared By
+
+    { wch: 12 }, // Prefix
+
+    { wch: 15 }, // Pending Days
+
+    { wch: 18 }, // Status
+  ];
+
+  // MERGE TITLE
+  ws["!merges"] = [
+    {
+      s: { r: 0, c: 0 },
+      e: { r: 0, c: 8 },
+    },
   ];
 
   // TITLE STYLE
@@ -71,7 +134,7 @@ export function exportStyledExcel(
 
     font: {
       bold: true,
-      sz: 15,
+      sz: 18,
       color: {
         rgb: "10B759"
       },
@@ -79,75 +142,160 @@ export function exportStyledExcel(
 
     alignment: {
       horizontal: "center",
+      vertical: "center",
     },
   };
 
   // HEADER STYLE
   const headerRow = 4;
 
-  ["A", "B", "C", "D", "E"]
-    .forEach((col) => {
+  [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+  ].forEach((col) => {
 
-      ws[`${col}${headerRow}`].s = {
+    ws[
+      `${col}${headerRow}`
+    ].s = {
 
-        font: {
-          bold: true,
+      font: {
+        bold: true,
+        color: {
+          rgb: "FFFFFF"
+        },
+      },
+
+      fill: {
+        fgColor: {
+          rgb: "10B759"
+        },
+      },
+
+      alignment: {
+        horizontal: "center",
+        vertical: "center",
+      },
+
+      border: {
+
+        top: {
+          style: "thin",
           color: {
-            rgb: "FFFFFF"
+            rgb: "D1D5DB"
           },
         },
 
-        fill: {
-          fgColor: {
-            rgb: "10B759"
+        bottom: {
+          style: "thin",
+          color: {
+            rgb: "D1D5DB"
           },
         },
 
-        alignment: {
-          horizontal: "center",
+        left: {
+          style: "thin",
+          color: {
+            rgb: "D1D5DB"
+          },
         },
-      };
-    });
+
+        right: {
+          style: "thin",
+          color: {
+            rgb: "D1D5DB"
+          },
+        },
+      },
+    };
+  });
 
   // ROW COLORS
-  data.forEach((row, index) => {
+  data.forEach(
+    (row, index) => {
 
-    const excelRow =
-      index + 5;
+      const excelRow =
+        index + 5;
 
-    const status =
-      row[4];
+      const status =
+        row[8];
 
-    let bgColor =
-      "FFFFFF";
+      let bgColor =
+        "FFFFFF";
 
-    let textColor =
-      "000000";
+      let textColor =
+        "000000";
 
-    if (status === "Normal") {
-      bgColor = "DCFCE7";
-      textColor = "166534";
-    }
+      // STATUS COLORS
+      if (
+        status ===
+        "Normal"
+      ) {
 
-    if (status === "Attention") {
-      bgColor = "FEF9C3";
-      textColor = "854D0E";
-    }
+        bgColor =
+          "DCFCE7";
 
-    if (status === "Critical") {
-      bgColor = "FED7AA";
-      textColor = "9A3412";
-    }
+        textColor =
+          "166534";
+      }
 
-    if (status === "Escalation") {
-      bgColor = "FECACA";
-      textColor = "991B1B";
-    }
+      if (
+        status ===
+        "Attention"
+      ) {
 
-    ["A", "B", "C", "D", "E"]
-      .forEach((col) => {
+        bgColor =
+          "FEF9C3";
 
-        ws[`${col}${excelRow}`].s = {
+        textColor =
+          "854D0E";
+      }
+
+      if (
+        status ===
+        "Critical"
+      ) {
+
+        bgColor =
+          "FED7AA";
+
+        textColor =
+          "9A3412";
+      }
+
+      if (
+        status ===
+        "Escalation"
+      ) {
+
+        bgColor =
+          "FECACA";
+
+        textColor =
+          "991B1B";
+      }
+
+      [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+      ].forEach((col) => {
+
+        ws[
+          `${col}${excelRow}`
+        ].s = {
 
           fill: {
             fgColor: {
@@ -160,9 +308,41 @@ export function exportStyledExcel(
               rgb: textColor
             },
           },
+
+          border: {
+
+            top: {
+              style: "thin",
+              color: {
+                rgb: "E5E7EB"
+              },
+            },
+
+            bottom: {
+              style: "thin",
+              color: {
+                rgb: "E5E7EB"
+              },
+            },
+
+            left: {
+              style: "thin",
+              color: {
+                rgb: "E5E7EB"
+              },
+            },
+
+            right: {
+              style: "thin",
+              color: {
+                rgb: "E5E7EB"
+              },
+            },
+          },
         };
       });
-  });
+    }
+  );
 
   // WORKBOOK
   const wb =
@@ -174,7 +354,7 @@ export function exportStyledExcel(
     "Pending Jobs"
   );
 
-  // DOWNLOAD
+  // EXPORT
   XLSX.writeFile(
     wb,
     `Compass_Analysis_${Date.now()}.xlsx`
