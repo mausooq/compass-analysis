@@ -1,6 +1,7 @@
 export const RULES: Record<string, "ETA" | "ETD" | "DLV"> = {
   // Air
   AIMP: "ETA",
+  AEXP: "ETD",
   AI: "ETA",
   AFIMP: "ETA",
   AE: "ETD",

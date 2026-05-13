@@ -6,6 +6,7 @@ import DashboardCharts from "@/components/charts/dashboard-charts";
 import FilterBar from "@/components/filters/filter-bar";
 import JobsTable from "@/components/tables/jobs-table";
 import UploadZone from "@/components/upload/upload-zone";
+import PreparedByChart from "@/components/charts/prepared-by-chart";
 
 export default function HomePage() {
   return (
@@ -80,6 +81,7 @@ export default function HomePage() {
           <FilterBar />
 
           <DashboardCharts />
+          <PreparedByChart /> 
 
           <JobsTable />
 

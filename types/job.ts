@@ -1,13 +1,22 @@
 export interface Job {
+
   JobNo: string;
-  Customer?: string;
-  Shipper?: string;
-  Consignee?: string;
+
+  JobDate?: string;
+
+  Customer: string;
+
   ETA?: string;
+
   ETD?: string;
-  Status?: string;
+
+  DLV?: string;
+
+  PreparedBy?: string;
 
   prefix: string;
+
   pendingDays: number | null;
+
   agingBucket: string;
 }
