@@ -346,33 +346,46 @@ export default function PreparedByChart() {
         },
       },
 
-      y: {
+     y: {
 
-        ticks: {
+  ticks: {
 
-          color: "#D1D5DB",
+    color: "#D1D5DB",
 
-          font: {
+    font: {
 
-            size: 12,
-          },
-        },
+      size: 12,
+    },
 
-        grid: {
+    padding: 12,
+  },
 
-          color:
-            "rgba(255,255,255,0.03)",
-        },
+  grid: {
 
-        title: {
+    display: true,
 
-          display: true,
+    drawBorder: false,
 
-          text: "Prepared By",
+    color:
+      "rgba(255,255,255,0.3)",
 
-          color: "#9CA3AF",
-        },
-      },
+    lineWidth: 1,
+  },
+
+  border: {
+
+    display: false,
+  },
+
+  title: {
+
+    display: true,
+
+    text: "Prepared By",
+
+    color: "#9CA3AF",
+  },
+},
     },
   };
 
