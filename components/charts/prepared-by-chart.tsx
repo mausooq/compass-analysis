@@ -6,11 +6,12 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Tooltip,
   Legend,
 } from "chart.js";
 
-import { Line } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 
 import { useDashboardStore } from "@/store/dashboardStore";
 
@@ -21,6 +22,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Tooltip,
   Legend
 );
@@ -38,31 +40,47 @@ export default function PreparedByChart() {
   const [selectedUser, setSelectedUser] =
     useState("ALL");
 
-  // APPLY GLOBAL FILTERS
+  // APPLY FILTERS
   const filteredJobs = jobs.filter((job) => {
 
     const matchesSearch =
+
       job.JobNo
         ?.toLowerCase()
-        .includes(search.toLowerCase()) ||
+        .includes(search.toLowerCase())
+
+      ||
 
       job.Customer
         ?.toLowerCase()
         .includes(search.toLowerCase());
 
     const matchesPrefix =
-      selectedPrefix === "ALL" ||
+
+      selectedPrefix === "ALL"
+
+      ||
+
       job.prefix === selectedPrefix;
 
     const matchesBlank =
-      showBlankDates ||
+
+      showBlankDates
+
+      ||
+
       job.pendingDays !== null;
 
     const matchesUser =
-      selectedUser === "ALL" ||
+
+      selectedUser === "ALL"
+
+      ||
+
       job.PreparedBy === selectedUser;
 
     return (
+
       matchesSearch &&
       matchesPrefix &&
       matchesBlank &&
@@ -70,7 +88,7 @@ export default function PreparedByChart() {
     );
   });
 
-  // PREPARED BY LIST
+  // USERS
   const preparedUsers = [
 
     "ALL",
@@ -124,18 +142,20 @@ export default function PreparedByChart() {
     }
   });
 
-  // SORT
+  // SORT TOTAL
   const sorted = Object.entries(grouped)
 
     .sort((a, b) => {
 
       const totalA =
+
         a[1].Normal +
         a[1].Attention +
         a[1].Critical +
         a[1].Escalation;
 
       const totalB =
+
         b[1].Normal +
         b[1].Attention +
         b[1].Critical +
@@ -144,7 +164,7 @@ export default function PreparedByChart() {
       return totalB - totalA;
     })
 
-    .slice(0, 10);
+    .slice(0, 15);
 
   // LABELS
   const labels =
@@ -155,87 +175,85 @@ export default function PreparedByChart() {
 
     labels,
 
-    datasets: [
+  datasets: [
 
-      {
-        label: "Normal",
+  {
+    label: "Escalation",
 
-        data: sorted.map(
-          ([, value]) => value.Normal
-        ),
+    data: sorted.map(
+      ([, value]) => value.Escalation
+    ),
 
-        borderColor: "#22C55E",
+    backgroundColor:
+      "#FF2D55",
 
-        backgroundColor:
-          "rgba(34,197,94,0.15)",
+    borderColor:
+      "#FF5C7C",
 
-        tension: 0.4,
+    borderWidth: 1,
 
-        pointRadius: 4,
+    borderRadius: 12,
+  },
 
-        borderWidth: 3,
-      },
+  {
+    label: "Critical",
 
-      {
-        label: "Attention",
+    data: sorted.map(
+      ([, value]) => value.Critical
+    ),
 
-        data: sorted.map(
-          ([, value]) => value.Attention
-        ),
+    backgroundColor:
+      "#FF9F0A",
 
-        borderColor: "#FACC15",
+    borderColor:
+      "#FFB340",
 
-        backgroundColor:
-          "rgba(250,204,21,0.15)",
+    borderWidth: 1,
 
-        tension: 0.4,
+    borderRadius: 12,
+  },
 
-        pointRadius: 4,
+  {
+    label: "Attention",
 
-        borderWidth: 3,
-      },
+    data: sorted.map(
+      ([, value]) => value.Attention
+    ),
 
-      {
-        label: "Critical",
+    backgroundColor:
+      "#FFD60A",
 
-        data: sorted.map(
-          ([, value]) => value.Critical
-        ),
+    borderColor:
+      "#FFE14A",
 
-        borderColor: "#FB923C",
+    borderWidth: 1,
 
-        backgroundColor:
-          "rgba(251,146,60,0.15)",
+    borderRadius: 12,
+  },
 
-        tension: 0.4,
+  {
+    label: "Normal",
 
-        pointRadius: 4,
+    data: sorted.map(
+      ([, value]) => value.Normal
+    ),
 
-        borderWidth: 3,
-      },
+    backgroundColor:
+      "#32D74B",
 
-      {
-        label: "Escalation",
+    borderColor:
+      "#5CFF72",
 
-        data: sorted.map(
-          ([, value]) => value.Escalation
-        ),
+    borderWidth: 1,
 
-        borderColor: "#EF4444",
-
-        backgroundColor:
-          "rgba(239,68,68,0.15)",
-
-        tension: 0.4,
-
-        pointRadius: 4,
-
-        borderWidth: 3,
-      },
-    ],
+    borderRadius: 12,
+  },
+]
   };
 
   const options: any = {
+
+    indexAxis: "y",
 
     responsive: true,
 
@@ -266,6 +284,38 @@ export default function PreparedByChart() {
           "#374151",
 
         borderWidth: 1,
+
+        callbacks: {
+
+          label: function(
+            context: any
+          ) {
+
+            return `${context.dataset.label}: ${context.raw} jobs`;
+          },
+
+          afterBody: function(
+            context: any
+          ) {
+
+            const index =
+              context[0].dataIndex;
+
+            const item =
+              sorted[index][1];
+
+            return [
+
+              `Normal: ${item.Normal}`,
+
+              `Attention: ${item.Attention}`,
+
+              `Critical: ${item.Critical}`,
+
+              `Escalation: ${item.Escalation}`,
+            ];
+          },
+        },
       },
     },
 
@@ -273,27 +323,54 @@ export default function PreparedByChart() {
 
       x: {
 
+        beginAtZero: true,
+
         ticks: {
+
           color: "#D1D5DB",
         },
 
         grid: {
+
           color:
             "rgba(255,255,255,0.05)",
+        },
+
+        title: {
+
+          display: true,
+
+          text: "Number of Jobs",
+
+          color: "#9CA3AF",
         },
       },
 
       y: {
 
-        beginAtZero: true,
-
         ticks: {
+
           color: "#D1D5DB",
+
+          font: {
+
+            size: 12,
+          },
         },
 
         grid: {
+
           color:
-            "rgba(255,255,255,0.05)",
+            "rgba(255,255,255,0.03)",
+        },
+
+        title: {
+
+          display: true,
+
+          text: "Prepared By",
+
+          color: "#9CA3AF",
         },
       },
     },
@@ -357,21 +434,14 @@ export default function PreparedByChart() {
 
           className="
             bg-white/5
-
             border
             border-white/10
-
             text-white
-
             rounded-2xl
-
             px-4
             py-3
-
             outline-none
-
             backdrop-blur-xl
-
             min-w-[220px]
           "
         >
@@ -396,9 +466,9 @@ export default function PreparedByChart() {
 
       {/* CHART */}
 
-      <div className="h-[500px]">
+      <div className="h-[650px]">
 
-        <Line
+        <Bar
           data={data}
           options={options}
         />
